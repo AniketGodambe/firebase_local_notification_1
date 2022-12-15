@@ -1,9 +1,12 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get_storage/get_storage.dart';
 
 const AndroidNotificationChannel channel = AndroidNotificationChannel(
   'high_importance_channel', // id
@@ -16,9 +19,17 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 void main() async {
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  FirebaseMessaging.onMessageOpenedApp.listen(getMessages);
-  FirebaseMessaging.onMessage.listen(getMessages);
+  await GetStorage.init('type');
+
+  //for in app notifications
+  if (Platform.isAndroid) {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    FirebaseMessaging.onMessageOpenedApp.listen(getMessages);
+    FirebaseMessaging.onMessage.listen(getMessages);
+  } else {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    FirebaseMessaging.onMessageOpenedApp.listen(onMessageOpenedAppFnIos);
+  }
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
@@ -81,30 +92,52 @@ void main() async {
       android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
+    onDidReceiveBackgroundNotificationResponse: notificationData,
     onDidReceiveNotificationResponse: (NotificationResponse value) {
       // commonControllert.notificatinNavigations(value.payload.toString());
     },
   );
 
-  runApp(const MyApp());
+  await GetStorage.init();
+  flutterLocalNotificationsPlugin
+      .getNotificationAppLaunchDetails()
+      .then((value) {
+    if (value!.didNotificationLaunchApp) {
+      if (value.notificationResponse!.payload != null) {
+        GetStorage('type')
+            .write('type', value.notificationResponse!.payload.toString());
+      }
+    }
+  });
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]).then((_) {
+    runApp(const MyApp());
+  });
+}
+
+void onMessageOpenedAppFnIos(RemoteMessage message) {
+  log("onMessageOpenedAppFn");
+  // commonControllert
+  //     .notificatinNavigations(message.data['type'].toString())
+  //     .then((value) {
+  //   GetStorage('type').write('type', "");
+  // });
 }
 
 void getMessages(RemoteMessage message) {
   triggerNotification(message);
 }
 
+@pragma('vm:entry-point')
+notificationData(NotificationResponse value) async {
+  // commonControllert.notificatinNavigations(value.payload.toString());
+}
+
+@pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   triggerNotification(message);
   await Firebase.initializeApp();
-  log('A bg message just showed up :  ${message.messageId}');
-  log('Got a message whilst in the Background!');
-  log('Message data:: ${message.data}');
-  log('Message category:: ${message.category}');
-  log('Message collapseKey:: ${message.collapseKey}');
-  log('Message contentAvailable:: ${message.contentAvailable}');
-  log('Message from:: ${message.from}');
-  log('Message messageType:: ${message.messageType}');
-  log('Message mutableContent:: ${message.mutableContent}');
 }
 
 void triggerNotification(RemoteMessage message) {
@@ -112,16 +145,6 @@ void triggerNotification(RemoteMessage message) {
   AndroidNotification? android = message.notification?.android;
 
   if (android != null && notification != null) {
-    log('android:: ${notification.android}');
-    log('apple:: ${notification.apple}');
-    log('body:: ${notification.body}');
-    log('bodyLocArgs:: ${notification.bodyLocArgs}');
-    log('bodyLocKey:: ${notification.bodyLocKey}');
-    log('title:: ${notification.title}');
-    log('titleLocArgs:: ${notification.titleLocArgs}');
-    log('titleLocKey:: ${notification.titleLocKey}');
-    log("firebase notification");
-
     flutterLocalNotificationsPlugin.show(
       notification.hashCode,
       notification.title,
@@ -163,17 +186,28 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demojhjhj hjhk ',
+      title: 'Flutter Local Notifications',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text("Hello"),
+          title: const Text("Firebase Local Notifications"),
         ),
-        body: Column(children: const [
-          Text("Hello"),
-        ]),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Text(
+              "Just copy paste",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
