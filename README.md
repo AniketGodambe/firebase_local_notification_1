@@ -1,8 +1,9 @@
 # firebase_local_notification
+# Notifications for android and ios.
 
-This project is a starting point for a Flutter application.
+- Setup your project in firebase. Complete required things related to firebase in app notifications.
 
-Using get_storage Notifications for android and iOS.
+- There is different code for below mention actions.
 
 - onMessage, onBackgroundMessage and onMessageOpenedApp notifications and navigations.
 

@@ -118,11 +118,8 @@ void main() async {
 
 void onMessageOpenedAppFnIos(RemoteMessage message) {
   log("onMessageOpenedAppFn");
-  // commonControllert
-  //     .notificatinNavigations(message.data['type'].toString())
-  //     .then((value) {
-  //   GetStorage('type').write('type', "");
-  // });
+  //add your navigations here
+  //Get.to(()=> Pagename());
 }
 
 void getMessages(RemoteMessage message) {
@@ -180,8 +177,36 @@ void triggerNotification(RemoteMessage message) {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  //for ios background notifications
+  Future<void> setupInteractedMessage() async {
+    RemoteMessage? initialMessage =
+        await FirebaseMessaging.instance.getInitialMessage();
+
+    if (initialMessage != null) {
+      _handleMessage(initialMessage);
+    }
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+  }
+
+  void _handleMessage(RemoteMessage message) {
+    GetStorage('type').write('type', message.data['type'] ?? "".toString());
+  }
+
+  @override
+  void initState() {
+    if (Platform.isIOS) {
+      setupInteractedMessage();
+    }
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
