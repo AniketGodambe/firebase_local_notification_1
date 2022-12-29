@@ -21,7 +21,8 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 void main() async {
   await GetStorage.init('type');
 
-  //for in app notifications
+  //for in app notifications 
+  //android and ios has different situations for notifications
   if (Platform.isAndroid) {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     FirebaseMessaging.onMessageOpenedApp.listen(getMessages);
@@ -203,7 +204,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     if (Platform.isIOS) {
-      setupInteractedMessage();
+      setupInteractedMessage() ;
     }
     super.initState();
   }
